@@ -1,0 +1,56 @@
+1. Assuming the XINU text begins at address 0x0, draw a rough diagram of XINU's memory layout with addresses derived from your experimental measurements. Include the information you uncovered from running your version of printsegaddress() and printprocstks().
+
+The diagram of XINU's memory layout is as following:
+ -------------------------------------------------------------------------------
+ |    text    |    data    |    BSS    |    heap    |    free    |    stack    |
+ -------------------------------------------------------------------------------
+0x0        0x18de3      0x1d5b8     0x25c54                                 0xffeff8
+
+The three external symbols "etext", "edata" and "end" correspond to the first memory location beyond the text, data and BSS segment. Therefore the end address of text is etext-1 is 0x00018de3 the end of data is edata-1 is 0x0001d5b8, and the end of BSS is end-1 is 0x00025c54.
+
+
+2. What is the difference in stack top address before and after calling printtos() ? Draw a diagram to illustrate what are the contents of the items pushed into the stack between these two time points.
+
+|--------------------|
+|     saved ESI      |
+|--------------------|
+|     saved EDI      |
+|--------------------|
+|  local variables   |
+|--------------------|
+|     saved EBP      |
+|--------------------|  <---- after
+|   return address   |
+|--------------------|  <---- before
+|     parameters     |
+|--------------------|
+
+The stack top address after calling printtos() is 4 bytes smaller than before calling. When calling printtos(), the caller uses the 'call' instruction. This instruction will place the reture address onto the stack. This takes 4 bytes.
+
+
+3. Which byte order is adopted in the host machine that we are using ? How did you find out ?
+
+The host machine uses little-endian byte order. I wrote a simple code as follow to find out.
+
+#include <stdio.h>
+int main(){
+    int i = 0x02000001;
+    printf("%d\n", i);
+    char c = (char) i;
+    printf("%d\n", c);
+}
+The print result is 1. When casting from integer to char, it takes the first byte. Therefore the 0x01 is stored in the first byte and this indicates that the host machine is little-endian.
+
+
+4. Briefly describe the mov, push, pusha, pop, and popa instructions in the x86.
+
+mov: copy the content of a memory address, register etc to the destination address, register etc.
+push: place its operand onto the top of the stack.
+pusha: place all general-purpose registers to the stack in the following order: AX, CX, DX, BX, SP, BP, SI, DI.
+pop: remove the top element from the stack into the specified operand.
+popa: remove all general-purpose registers from the stack in the reverse order of pusha.
+
+
+5. In a stack frame, local variables are stored below the top of the stack. In task 3, does your result show all the local variables declared in your printtos function? If not, can you explain that? (hint: try to disable the compiler optimization by specifing -O0 in your Makefile)
+
+The result doesn't show all local variables. When compiler optimization is enabled, compiler is allowed to place the local variables to other places.
